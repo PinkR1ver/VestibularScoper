@@ -1,0 +1,71 @@
+---
+description: VestibularScoper 项目的代码风格与开发规范
+globs: **/*.py
+---
+# VestibularScoper Coding Standards
+
+你正在参与开发 **VestibularScoper** 项目，这是一个基于 Python 的前庭检查与眼动分析软件。
+请在生成或修改代码时严格遵守以下规则。
+
+## 1. 核心原则 (Core Principles)
+
+- **架构分层 (MVVM)**:
+  - **UI 层 (`app/ui`)**: 仅负责界面展示与用户交互。严禁包含复杂业务逻辑。
+  - **Core 层 (`app/core`)**: 处理算法、摄像头控制、硬件交互。
+  - **Database 层 (`app/database`)**: 处理数据模型与持久化。
+- **线程安全**:
+  - 所有耗时操作（摄像头采集、AI推理、视频编码）必须在独立线程 (`QThread`) 中运行。
+  - 严禁阻塞 UI 主线程。
+  - 跨线程通信必须使用 Qt Signals/Slots。
+- **环境安全**:
+  - 必须使用工作区内的 `.conda` 环境 (`./.conda/bin/python`)。
+  - 入口文件必须包含 `os.environ["QT_API"] = "pyside6"` 及 `sys.modules` hack 以防止 PyQt5 冲突。
+
+## 2. 技术栈 (Tech Stack)
+
+- **GUI**: PySide6 + `PySide6-Fluent-Widgets` (Modern UI)。
+- **CV/AI**: OpenCV (`cv2`), MediaPipe, PyTorch。
+- **Database**: SQLite + SQLAlchemy 2.0 (ORM)。
+- **Typing**: 必须使用 Python 类型注解 (Type Hints)。
+
+## 3. 代码风格 (Code Style)
+
+- **命名**:
+  - Class: `PascalCase` (e.g. `CameraInterface`)
+  - Function/Variable: `snake_case` (e.g. `start_capture`)
+  - Constants: `UPPER_CASE` (e.g. `DEFAULT_FPS`)
+- **调试**:
+  - 提交代码前必须清理所有 `print` 调试语句。
+  - 关键错误必须捕获并在 UI 层给予用户反馈。
+
+## 4. 目录结构 (Directory Structure)
+
+```text
+app/
+├── core/           # 业务逻辑 (Camera, Algorithm)
+├── database/       # 数据模型 (SQLAlchemy)
+├── ui/             # 界面代码 (Views, Components)
+│   └── main_window.py
+└── utils/          # 工具函数
+```
+
+## 5. 常用代码片段 (Snippets)
+
+### 摄像头线程模板
+```python
+class CameraThread(QThread):
+    frame_received = Signal(QImage)
+    def run(self):
+        cap = cv2.VideoCapture(self.camera_id)
+        while self.is_running:
+            ret, frame = cap.read()
+            # Convert to QImage...
+            self.frame_received.emit(qt_image)
+```
+
+### 入口文件防冲突
+```python
+import os, sys
+os.environ["QT_API"] = "pyside6"
+sys.modules["PyQt5"] = None # Block PyQt5
+```
