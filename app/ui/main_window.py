@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QApplication
 from qfluentwidgets import FluentWindow, NavigationItemPosition, FluentIcon, InfoBar
 
 from app.ui.views.patient_manager import PatientManagerInterface
-from app.ui.views.spontaneous_test_interface import SpontaneousTestInterface
+from app.ui.views.nystagmus_module import SpontaneousNystagmusModule
 
 class MainWindow(FluentWindow):
     """ 主窗口框架 """
@@ -14,16 +14,16 @@ class MainWindow(FluentWindow):
         
         # 1. 创建子界面
         self.home_interface = PatientManagerInterface(self)
-        self.test_interface = SpontaneousTestInterface(self)
+        self.nystagmus_module = SpontaneousNystagmusModule(self)
         
         # 2. 初始化导航栏
         self.init_navigation()
         
         # 3. 信号连接
-        self.home_interface.patient_selected.connect(self.start_examination)
+        self.home_interface.patient_selected.connect(self.on_patient_selected)
 
     def init_navigation(self):
-        # 首页 - 患者管理
+        # 患者管理
         self.addSubInterface(
             self.home_interface,
             FluentIcon.PEOPLE,
@@ -31,21 +31,20 @@ class MainWindow(FluentWindow):
             NavigationItemPosition.TOP
         )
         
-        # 检查页面
-        self.test_interface_pos = self.addSubInterface(
-            self.test_interface,
+        # 自发眼震模块 (包含检查+分析)
+        self.addSubInterface(
+            self.nystagmus_module,
             FluentIcon.VIDEO,
-            "自发眼震检查",
+            "自发眼震",
             NavigationItemPosition.TOP
         )
 
-    def start_examination(self, patient_id, patient_name):
-        """ 选中患者后跳转到检查页面 """
-        # 通知检查页面当前是哪个患者
-        self.test_interface.set_current_patient(patient_id, patient_name)
+    def on_patient_selected(self, patient_id, patient_name):
+        """ 选中患者后，同步更新相关页面 """
+        self.nystagmus_module.set_current_patient(patient_id, patient_name)
         
-        # 切换到检查页面
-        self.switchTo(self.test_interface)
+        # 跳转到眼震模块
+        self.switchTo(self.nystagmus_module)
         
         InfoBar.info(
             title='就绪',
